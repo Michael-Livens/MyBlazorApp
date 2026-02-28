@@ -12,7 +12,13 @@ public class PoemService
         _dbContextFactory = dbContextFactory;
     }
 
-    public async Task<List<Poem>> GetSubmittedPoemsAsync(string orderBy = "latest")
+    public async Task<int> GetSubmittedPoemsCountAsync()
+    {
+        using var db = await _dbContextFactory.CreateDbContextAsync();
+        return await db.Poems.CountAsync(p => p.IsSubmitted);
+    }
+
+    public async Task<List<Poem>> GetSubmittedPoemsAsync(int startIndex, int count, string orderBy = "latest")
     {
         using var db = await _dbContextFactory.CreateDbContextAsync();
         var query = db.Poems
@@ -22,14 +28,18 @@ public class PoemService
 
         if (orderBy == "upvotes")
         {
-            return await query
+            query = query
                 .OrderByDescending(p => p.Upvotes.Count)
-                .ThenByDescending(p => p.CreatedAt)
-                .ToListAsync();
+                .ThenByDescending(p => p.CreatedAt);
+        }
+        else
+        {
+            query = query.OrderByDescending(p => p.CreatedAt);
         }
         
         return await query
-            .OrderByDescending(p => p.CreatedAt)
+            .Skip(startIndex)
+            .Take(count)
             .ToListAsync();
     }
 

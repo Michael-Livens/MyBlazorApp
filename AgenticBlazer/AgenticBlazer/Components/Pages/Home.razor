@@ -1,9 +1,11 @@
 ﻿@page "/home"
 @using AgenticBlazer.Data
 @using AgenticBlazer.Services
+@using Microsoft.AspNetCore.Components.Web.Virtualization
 @inject UserState UserState
 @inject PoemService PoemService
 @inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Poems Feed</PageTitle>
@@ -14,83 +16,80 @@
 }
 else
 {
-    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
-        <h2>Poems Feed</h2>
+    <div style="position: fixed; top: 0; left: 0; width: 100%; background-color: white; z-index: 1020; padding: 20px; border-bottom: 1px solid #ccc; font-family: 'Times New Roman', Times, serif;">
+        <h1 style="font-weight: bold; margin: 0 0 15px 0; font-size: 2em; color: black;">Poems Feed</h1>
         <div>
-            <label class="me-2 fw-bold">Order By:</label>
-            <select class="form-select w-auto d-inline-block" @bind="orderBy">
+            <span style="font-size: 1.1em; margin-right: 5px; color: black;">Order By:</span>
+            <select value="@orderBy" @onchange="OnOrderChanged" style="font-size: 1em; padding: 2px 5px; border: 1px solid #999; border-radius: 3px; font-family: inherit; color: black; background: white;">
                 <option value="latest">Latest</option>
                 <option value="upvotes">Most Upvoted</option>
             </select>
-            <button class="btn btn-outline-primary ms-3" @onclick="GoToComposition">My Poems</button>
-            <button class="btn btn-outline-danger ms-2" @onclick="Logout">Logout</button>
+            <button style="margin-left: 15px; padding: 2px 10px; font-size: 1em; border: 1px solid #999; border-radius: 3px; background-color: #f5f5f5; color: black; cursor: pointer; font-family: inherit;" @onclick="GoToComposition">My Poems</button>
+            <button style="margin-left: 5px; padding: 2px 10px; font-size: 1em; border: 1px solid #999; border-radius: 3px; background-color: #f5f5f5; color: black; cursor: pointer; font-family: inherit;" @onclick="Logout">Logout</button>
         </div>
     </div>
 
-    @if (poems == null)
-    {
-        <p>Loading...</p>
-    }
-    else if (!poems.Any())
-    {
-        <p>No poems have been submitted yet.</p>
-    }
-    else
-    {
-        @foreach (var poem in poems)
-        {
-            var hasUpvoted = poem.Upvotes.Any(u => u.UserId == UserState.CurrentUserId);
-            <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">@poem.Title</h5>
-                    <h6 class="card-subtitle mb-3 text-muted">By @poem.User?.Username on @poem.CreatedAt.ToString("g")</h6>
-                    <p class="card-text border-start border-3 border-info ps-3 py-1" style="white-space: pre-wrap; font-family: Georgia, serif;">@poem.Content</p>
-                    <button class="btn btn-sm @(hasUpvoted ? "btn-success" : "btn-outline-success")" 
+    <div style="padding-top: 150px; padding-bottom: 50px; margin: 0 auto; max-width: 800px; font-family: 'Times New Roman', Times, serif;">
+        <Virtualize @ref="virtualizeComponent" ItemsProvider="LoadPoemsProvider" Context="poem" ItemSize="250" OverscanCount="30">
+            <ItemContent>
+                @{ var hasUpvoted = poem.Upvotes.Any(u => u.UserId == UserState.CurrentUserId); }
+                <div style="border: 1px solid #ddd; margin-bottom: 20px; padding: 15px; background: transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 1.5em; font-weight: bold; color: black;">@poem.Title</h3>
+                    <div style="color: #666; font-size: 0.9em; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                        By @poem.User?.Username on @poem.CreatedAt.ToString("g")
+                    </div>
+                    <p style="white-space: pre-wrap; margin-bottom: 20px; font-size: 1.1em; line-height: 1.6; border-left: 3px solid #999; padding-left: 15px; color: black;">@poem.Content</p>
+                    <button type="button" 
+                            style="padding: 5px 12px; font-size: 0.9em; cursor: pointer; border-radius: 3px; border: 1px solid #666; transition: all 0.2s; 
+                                   @(hasUpvoted ? "background-color: #444; color: white; border-color: #444;" : "background-color: white; color: #333;")"
                             @onclick="() => ToggleUpvote(poem.Id)">
-                        &#x25B2; Upvote (@poem.Upvotes.Count)
+                        @(hasUpvoted ? "\u25B2 Upvoted" : "\u25B2 Upvote") (@poem.Upvotes.Count)
                     </button>
                 </div>
-            </div>
-        }
-    }
+            </ItemContent>
+            <Placeholder>
+                <p style="color: #666; font-style: italic;">Loading...</p>
+            </Placeholder>
+        </Virtualize>
+    </div>
 }
 
 @code {
-    private List<Poem>? poems;
-    private string _orderBy = "latest";
-    private string orderBy
-    {
-        get => _orderBy;
-        set
-        {
-            if (_orderBy != value)
-            {
-                _orderBy = value;
-                _ = LoadPoems();
-            }
-        }
-    }
+private Virtualize<Poem>? virtualizeComponent;
+private string orderBy = "latest";
 
-    protected override async Task OnInitializedAsync()
+private async Task OnOrderChanged(ChangeEventArgs e)
+{
+    var newValue = e.Value?.ToString();
+    if (orderBy != newValue && !string.IsNullOrEmpty(newValue))
     {
-        if (UserState.IsLoggedIn)
-        {
-            await LoadPoems();
-        }
+        orderBy = newValue;
+        await RefreshPoemsAsync();
+        await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
     }
+}
 
-    private async Task LoadPoems()
+private async Task RefreshPoemsAsync()
+{
+    if (virtualizeComponent != null)
     {
-        poems = await PoemService.GetSubmittedPoemsAsync(orderBy);
-        StateHasChanged();
+        await virtualizeComponent.RefreshDataAsync();
     }
+}
 
-    private async Task ToggleUpvote(int poemId)
-    {
-        if (!UserState.IsLoggedIn) return;
-        await PoemService.ToggleUpvoteAsync(poemId, UserState.CurrentUserId!.Value);
-        await LoadPoems();
-    }
+private async ValueTask<ItemsProviderResult<Poem>> LoadPoemsProvider(ItemsProviderRequest request)
+{
+    var totalCount = await PoemService.GetSubmittedPoemsCountAsync();
+    var fetchPoems = await PoemService.GetSubmittedPoemsAsync(request.StartIndex, request.Count, orderBy);
+    return new ItemsProviderResult<Poem>(fetchPoems, totalCount);
+}
+
+private async Task ToggleUpvote(int poemId)
+{
+    if (!UserState.IsLoggedIn) return;
+    await PoemService.ToggleUpvoteAsync(poemId, UserState.CurrentUserId!.Value);
+    await RefreshPoemsAsync();
+}
 
     private void GoToComposition()
     {
