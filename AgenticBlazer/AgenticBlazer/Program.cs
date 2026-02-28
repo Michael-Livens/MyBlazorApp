@@ -1,0 +1,59 @@
+using AgenticBlazer.Components;
+using Microsoft.EntityFrameworkCore;
+using AgenticBlazer.Data;
+
+namespace AgenticBlazer
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+            
+            builder.Services.AddDbContextFactory<AppDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Add services to the container.
+            builder.Services.AddRazorComponents()
+                .AddInteractiveServerComponents()
+                .AddInteractiveWebAssemblyComponents();
+            
+            builder.Services.AddScoped<AgenticBlazer.Services.UserService>();
+
+            var app = builder.Build();
+
+            // Ensure database is created
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+                using var db = dbFactory.CreateDbContext();
+                db.Database.EnsureCreated();
+            }
+
+            // Configure the HTTP request pipeline.
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseWebAssemblyDebugging();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
+
+            app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+            app.UseHttpsRedirection();
+
+            app.UseAntiforgery();
+
+            app.MapStaticAssets();
+            app.MapRazorComponents<App>()
+                .AddInteractiveServerRenderMode()
+                .AddInteractiveWebAssemblyRenderMode()
+                .AddAdditionalAssemblies(typeof(Client._Imports).Assembly);
+
+            app.Run();
+        }
+    }
+}

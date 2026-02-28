@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AgenticBlazer/AgenticBlazer.Client/AgenticBlazer.Client.csproj" />
+  <Project Path="AgenticBlazer/AgenticBlazer/AgenticBlazer.csproj" />
+</Solution>

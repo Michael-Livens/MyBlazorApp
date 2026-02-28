@@ -1,0 +1,44 @@
+@page "/register"
+@using AgenticBlazer.Services
+@inject UserService UserService
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<PageTitle>Register</PageTitle>
+
+<h3>Register New User</h3>
+
+<div style="max-width:300px;">
+    <div>
+        <label>Username</label>
+        <input class="form-control" @bind="username" />
+    </div>
+    <div class="mt-2">
+        <label>Password</label>
+        <input type="password" class="form-control" @bind="password" />
+    </div>
+    <button class="btn btn-success mt-3" @onclick="AttemptRegister">Register</button>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3">@errorMessage</div>
+}
+
+@code {
+    private string username = "";
+    private string password = "";
+    private string errorMessage = "";
+
+    private async Task AttemptRegister()
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Both fields are required.";
+            return;
+        }
+
+        await UserService.RegisterAsync(username, password);
+        NavManager.NavigateTo("/");
+    }
+}
