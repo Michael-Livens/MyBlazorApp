@@ -14,6 +14,10 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+
         // Prevent multiple cascade paths error in SQL Server
         modelBuilder.Entity<PoemUpvote>()
             .HasOne(u => u.User)

@@ -12,15 +12,18 @@ public class UserService
         _dbContextFactory = dbContextFactory;
     }
 
-    public async Task RegisterAsync(string username, string password)
+    public async Task<bool> RegisterAsync(string username, string password)
     {
         using var db = await _dbContextFactory.CreateDbContextAsync();
         var userExists = await db.Users.AnyAsync(u => u.Username == username);
-        if (!userExists)
+        if (userExists)
         {
-            db.Users.Add(new User { Username = username, Password = password });
-            await db.SaveChangesAsync();
+            return false;
         }
+
+        db.Users.Add(new User { Username = username, Password = password });
+        await db.SaveChangesAsync();
+        return true;
     }
 
     public async Task<User?> ValidateLoginAsync(string username, string password)

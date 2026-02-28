@@ -38,7 +38,14 @@
             return;
         }
 
-        await UserService.RegisterAsync(username, password);
-        NavManager.NavigateTo("/");
+        var success = await UserService.RegisterAsync(username, password);
+        if (success)
+        {
+            NavManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Username already exists. Please choose a different one.";
+        }
     }
 }
