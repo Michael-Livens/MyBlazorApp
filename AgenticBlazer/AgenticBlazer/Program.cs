@@ -30,6 +30,12 @@ namespace AgenticBlazer
                 var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
                 using var db = dbFactory.CreateDbContext();
                 db.Database.EnsureCreated();
+                try 
+                {
+                    db.Database.ExecuteSqlRaw("ALTER TABLE Users ADD Theme nvarchar(max) DEFAULT 'light'");
+                    db.Database.ExecuteSqlRaw("UPDATE Users SET Theme = 'light' WHERE Theme IS NULL");
+                } 
+                catch { } // Ignore if column already exists
             }
 
             // Configure the HTTP request pipeline.

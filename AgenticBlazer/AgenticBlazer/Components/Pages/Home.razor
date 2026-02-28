@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @inject UserState UserState
 @inject PoemService PoemService
+@inject UserService UserService
 @inject NavigationManager NavManager
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
@@ -16,16 +17,23 @@
 }
 else
 {
-    <div style="position: fixed; top: 0; left: 0; width: 100%; background-color: white; z-index: 1020; padding: 20px; border-bottom: 1px solid #ccc; font-family: 'Times New Roman', Times, serif;">
-        <h1 style="font-weight: bold; margin: 0 0 15px 0; font-size: 2em; color: black;">Poems Feed</h1>
+    <div style="position: fixed; top: 0; left: 0; right: 0; box-sizing: border-box; background-color: var(--bg-color); z-index: 1020; padding: 20px 35px 20px 20px; border-bottom: 1px solid var(--border-color); font-family: 'Times New Roman', Times, serif;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h1 style="font-weight: bold; margin: 0; font-size: 2em; color: var(--text-color);">Poems Feed</h1>
+            <div style="display: flex; gap: 10px;">
+                <button style="border-radius: 20px; padding: 2px 12px; background-color: #FFFFFF; color: #000; border: 2px solid @(UserState.CurrentTheme == "light" ? "#000" : "#ccc"); font-family: inherit; font-size: 0.9em; cursor: pointer;" @onclick='() => ChangeTheme("light")'>Light</button>
+                <button style="border-radius: 20px; padding: 2px 12px; background-color: #121212; color: #FFF; border: 2px solid @(UserState.CurrentTheme == "dark" ? "#FFF" : "#444"); font-family: inherit; font-size: 0.9em; cursor: pointer;" @onclick='() => ChangeTheme("dark")'>Dark</button>
+                <button style="border-radius: 20px; padding: 2px 12px; background-color: #E6DDC5; color: #3B2F2F; border: 2px solid @(UserState.CurrentTheme == "oxidized" ? "#3B2F2F" : "#C4B494"); font-family: inherit; font-size: 0.9em; cursor: pointer;" @onclick='() => ChangeTheme("oxidized")'>Oxidized</button>
+            </div>
+        </div>
         <div>
-            <span style="font-size: 1.1em; margin-right: 5px; color: black;">Order By:</span>
-            <select value="@orderBy" @onchange="OnOrderChanged" style="font-size: 1em; padding: 2px 5px; border: 1px solid #999; border-radius: 3px; font-family: inherit; color: black; background: white;">
+            <span style="font-size: 1.1em; margin-right: 5px; color: var(--text-color);">Order By:</span>
+            <select value="@orderBy" @onchange="OnOrderChanged" style="font-size: 1em; padding: 2px 5px; border: 1px solid var(--border-color); border-radius: 3px; font-family: inherit; color: var(--text-color); background: var(--bg-color);">
                 <option value="latest">Latest</option>
                 <option value="upvotes">Most Upvoted</option>
             </select>
-            <button style="margin-left: 15px; padding: 2px 10px; font-size: 1em; border: 1px solid #999; border-radius: 3px; background-color: #f5f5f5; color: black; cursor: pointer; font-family: inherit;" @onclick="GoToComposition">My Poems</button>
-            <button style="margin-left: 5px; padding: 2px 10px; font-size: 1em; border: 1px solid #999; border-radius: 3px; background-color: #f5f5f5; color: black; cursor: pointer; font-family: inherit;" @onclick="Logout">Logout</button>
+            <button style="margin-left: 15px; padding: 2px 10px; font-size: 1em; border: 1px solid var(--border-color); border-radius: 3px; background-color: var(--button-bg); color: var(--text-color); cursor: pointer; font-family: inherit;" @onclick="GoToComposition">My Poems</button>
+            <button style="margin-left: 5px; padding: 2px 10px; font-size: 1em; border: 1px solid var(--border-color); border-radius: 3px; background-color: var(--button-bg); color: var(--text-color); cursor: pointer; font-family: inherit;" @onclick="Logout">Logout</button>
         </div>
     </div>
 
@@ -33,22 +41,22 @@ else
         <Virtualize @ref="virtualizeComponent" ItemsProvider="LoadPoemsProvider" Context="poem" ItemSize="250" OverscanCount="30">
             <ItemContent>
                 @{ var hasUpvoted = poem.Upvotes.Any(u => u.UserId == UserState.CurrentUserId); }
-                <div style="border: 1px solid #ddd; margin-bottom: 20px; padding: 15px; background: transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 1.5em; font-weight: bold; color: black;">@poem.Title</h3>
-                    <div style="color: #666; font-size: 0.9em; margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                <div style="border: 1px solid var(--border-color); margin-bottom: 20px; padding: 15px; background-color: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 1.5em; font-weight: bold; color: var(--text-color);">@poem.Title</h3>
+                    <div style="color: var(--text-color); opacity: 0.8; font-size: 0.9em; margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
                         By @poem.User?.Username on @poem.CreatedAt.ToString("g")
                     </div>
-                    <p style="white-space: pre-wrap; margin-bottom: 20px; font-size: 1.1em; line-height: 1.6; border-left: 3px solid #999; padding-left: 15px; color: black;">@poem.Content</p>
+                    <p style="white-space: pre-wrap; margin-bottom: 20px; font-size: 1.1em; line-height: 1.6; border-left: 3px solid var(--border-color); padding-left: 15px; color: var(--text-color);">@poem.Content</p>
                     <button type="button" 
-                            style="padding: 5px 12px; font-size: 0.9em; cursor: pointer; border-radius: 3px; border: 1px solid #666; transition: all 0.2s; 
-                                   @(hasUpvoted ? "background-color: #444; color: white; border-color: #444;" : "background-color: white; color: #333;")"
+                            style="padding: 5px 12px; font-size: 0.9em; cursor: pointer; border-radius: 3px; border: 1px solid var(--border-color); transition: all 0.2s; 
+                                   @(hasUpvoted ? "background-color: var(--text-color); color: var(--bg-color); border-color: var(--text-color);" : "background-color: var(--bg-color); color: var(--text-color);")"
                             @onclick="() => ToggleUpvote(poem.Id)">
                         @(hasUpvoted ? "\u25B2 Upvoted" : "\u25B2 Upvote") (@poem.Upvotes.Count)
                     </button>
                 </div>
             </ItemContent>
             <Placeholder>
-                <p style="color: #666; font-style: italic;">Loading...</p>
+                <p style="color: var(--text-color); opacity: 0.8; font-style: italic;">Loading...</p>
             </Placeholder>
         </Virtualize>
     </div>
@@ -57,6 +65,15 @@ else
 @code {
 private Virtualize<Poem>? virtualizeComponent;
 private string orderBy = "latest";
+
+private async Task ChangeTheme(string theme)
+{
+    if (UserState.IsLoggedIn && UserState.CurrentUserId.HasValue)
+    {
+        UserState.SetTheme(theme);
+        await UserService.UpdateThemeAsync(UserState.CurrentUserId.Value, theme);
+    }
+}
 
 private async Task OnOrderChanged(ChangeEventArgs e)
 {

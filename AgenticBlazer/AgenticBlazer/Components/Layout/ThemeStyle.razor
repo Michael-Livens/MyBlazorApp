@@ -1,0 +1,61 @@
+@using AgenticBlazer.Services
+@inject UserState UserState
+@implements IDisposable
+@rendermode InteractiveServer
+
+<style>
+    :root {
+        --bg-color: @(GetBgColor());
+        --text-color: @(GetTextColor());
+        --card-bg: @(GetCardBgColor());
+        --border-color: @(GetBorderColor());
+        --button-bg: @(GetButtonBgColor());
+    }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+</style>
+
+@code {
+    protected override void OnInitialized()
+    {
+        UserState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        UserState.OnChange -= StateHasChanged;
+    }
+
+    private string GetBgColor() => UserState.CurrentTheme switch {
+        "dark" => "#121212",
+        "oxidized" => "#E6DDC5",
+        _ => "#FFFFFF"
+    };
+
+    private string GetTextColor() => UserState.CurrentTheme switch {
+        "dark" => "#EEEEEE",
+        "oxidized" => "#3B2F2F",
+        _ => "#000000"
+    };
+    
+    private string GetCardBgColor() => UserState.CurrentTheme switch {
+        "dark" => "#1E1E1E",
+        "oxidized" => "#F2EFDE",
+        _ => "transparent"
+    };
+
+    private string GetBorderColor() => UserState.CurrentTheme switch {
+        "dark" => "#444444",
+        "oxidized" => "#C4B494",
+        _ => "#dddddd"
+    };
+
+    private string GetButtonBgColor() => UserState.CurrentTheme switch {
+        "dark" => "#333333",
+        "oxidized" => "#D5C5A5",
+        _ => "#f5f5f5"
+    };
+}

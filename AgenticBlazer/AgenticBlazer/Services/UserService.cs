@@ -12,7 +12,7 @@ public class UserService
         _dbContextFactory = dbContextFactory;
     }
 
-    public async Task<bool> RegisterAsync(string username, string password)
+    public async Task<bool> RegisterAsync(string username, string password, string theme = "light")
     {
         using var db = await _dbContextFactory.CreateDbContextAsync();
         var userExists = await db.Users.AnyAsync(u => u.Username == username);
@@ -21,7 +21,7 @@ public class UserService
             return false;
         }
 
-        db.Users.Add(new User { Username = username, Password = password });
+        db.Users.Add(new User { Username = username, Password = password, Theme = theme });
         await db.SaveChangesAsync();
         return true;
     }
@@ -30,6 +30,17 @@ public class UserService
     {
         using var db = await _dbContextFactory.CreateDbContextAsync();
         return await db.Users.FirstOrDefaultAsync(u => u.Username == username && u.Password == password);
+    }
+
+    public async Task UpdateThemeAsync(Guid userId, string theme)
+    {
+        using var db = await _dbContextFactory.CreateDbContextAsync();
+        var user = await db.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.Theme = theme;
+            await db.SaveChangesAsync();
+        }
     }
 }
 
