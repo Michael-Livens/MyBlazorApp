@@ -1,0 +1,167 @@
+@page "/composition"
+@using AgenticBlazer.Data
+@using AgenticBlazer.Services
+@inject UserState UserState
+@inject PoemService PoemService
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<PageTitle>My Poems</PageTitle>
+
+@if (!UserState.IsLoggedIn)
+{
+    <div class="alert alert-warning mt-3">Please <a href="/">log in</a> to compose poems.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+        <h2>My Compositions</h2>
+        <div>
+            <button class="btn btn-outline-secondary" @onclick='() => NavManager.NavigateTo("/home")'>Back to Feed</button>
+            <button class="btn btn-primary ms-2" @onclick="CreateNew">Write New Poem</button>
+        </div>
+    </div>
+
+    @if (editingPoem != null)
+    {
+        <div class="card p-4 shadow-sm mb-4 border-info">
+            <h4 class="mb-3">@(editingPoem.Id == 0 ? "New Poem" : "Edit Poem")</h4>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Title</label>
+                <input class="form-control" @bind="editingPoem.Title" placeholder="Poem Title..." />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Content</label>
+                <textarea class="form-control" rows="8" @bind="editingPoem.Content" placeholder="Write your poem here..."></textarea>
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="flexCheckDefault" @bind="editingPoem.IsSubmitted">
+                <label class="form-check-label" for="flexCheckDefault">
+                    Submit (Publish to Feed)
+                </label>
+            </div>
+            <div>
+                <button class="btn btn-success" @onclick="SavePoem">Save</button>
+                <button class="btn btn-secondary ms-2" @onclick="CancelEdit">Cancel</button>
+            </div>
+        </div>
+    }
+
+    @if (myPoems == null)
+    {
+        <p>Loading...</p>
+    }
+    else if (!myPoems.Any())
+    {
+        <p>You haven't written any poems yet.</p>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var p in myPoems)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 shadow-sm border-@(p.IsSubmitted ? "success" : "warning")">
+                        <div class="card-body">
+                            <h5 class="card-title">@p.Title</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">@p.CreatedAt.ToString("g") - 
+                                <span class="badge bg-@(p.IsSubmitted ? "success" : "warning text-dark")">
+                                    @(p.IsSubmitted ? "Submitted" : "Draft")
+                                </span>
+                            </h6>
+                            <p class="card-text text-truncate" style="font-family: Georgia, serif;">@p.Content</p>
+                            @if(p.IsSubmitted){
+                                <span class="badge bg-info mb-2">@p.Upvotes.Count Upvotes</span>
+                            }
+                        </div>
+                        <div class="card-footer bg-transparent border-0 d-flex justify-content-between mb-2 px-3">
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => EditPoem(p)">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger ms-2" @onclick="() => DeletePoem(p.Id)">Delete</button>
+                            </div>
+                            <button class="btn btn-sm @(p.IsSubmitted ? "btn-outline-warning" : "btn-outline-success")" 
+                                    @onclick="() => ToggleSubmit(p)">
+                                @(p.IsSubmitted ? "Unsubmit" : "Submit")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<Poem>? myPoems;
+    private Poem? editingPoem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserState.IsLoggedIn)
+            await LoadMyPoems();
+    }
+
+    private async Task LoadMyPoems()
+    {
+        myPoems = await PoemService.GetUserPoemsAsync(UserState.CurrentUserId!.Value);
+    }
+
+    private void CreateNew()
+    {
+        editingPoem = new Poem
+        {
+            UserId = UserState.CurrentUserId!.Value
+        };
+    }
+
+    private void EditPoem(Poem poem)
+    {
+        editingPoem = new Poem
+        {
+            Id = poem.Id,
+            UserId = poem.UserId,
+            Title = poem.Title,
+            Content = poem.Content,
+            IsSubmitted = poem.IsSubmitted,
+            CreatedAt = poem.CreatedAt
+        };
+    }
+
+    private async Task SavePoem()
+    {
+        if (editingPoem == null || string.IsNullOrWhiteSpace(editingPoem.Title) || string.IsNullOrWhiteSpace(editingPoem.Content))
+            return; // Needs validation message ideally
+
+        if (editingPoem.Id == 0)
+        {
+            editingPoem.CreatedAt = DateTime.UtcNow;
+            await PoemService.AddPoemAsync(editingPoem);
+        }
+        else
+        {
+            // preserve existing upvotes by fetching? EF Update handles it.
+            await PoemService.UpdatePoemAsync(editingPoem);
+        }
+
+        editingPoem = null;
+        await LoadMyPoems();
+    }
+
+    private void CancelEdit()
+    {
+        editingPoem = null;
+    }
+
+    private async Task DeletePoem(int id)
+    {
+        await PoemService.DeletePoemAsync(id);
+        await LoadMyPoems();
+    }
+
+    private async Task ToggleSubmit(Poem poem)
+    {
+        poem.IsSubmitted = !poem.IsSubmitted;
+        await PoemService.UpdatePoemAsync(poem);
+        await LoadMyPoems();
+    }
+}

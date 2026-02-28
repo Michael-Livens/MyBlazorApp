@@ -23,10 +23,10 @@ public class UserService
         }
     }
 
-    public async Task<bool> ValidateLoginAsync(string username, string password)
+    public async Task<User?> ValidateLoginAsync(string username, string password)
     {
         using var db = await _dbContextFactory.CreateDbContextAsync();
-        return await db.Users.AnyAsync(u => u.Username == username && u.Password == password);
+        return await db.Users.FirstOrDefaultAsync(u => u.Username == username && u.Password == password);
     }
 }
 

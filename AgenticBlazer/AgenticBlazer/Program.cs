@@ -19,6 +19,8 @@ namespace AgenticBlazer
                 .AddInteractiveWebAssemblyComponents();
             
             builder.Services.AddScoped<AgenticBlazer.Services.UserService>();
+            builder.Services.AddScoped<AgenticBlazer.Services.UserState>();
+            builder.Services.AddScoped<AgenticBlazer.Services.PoemService>();
 
             var app = builder.Build();
 

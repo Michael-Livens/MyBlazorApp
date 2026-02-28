@@ -1,6 +1,7 @@
 @page "/"
 @using AgenticBlazer.Services
 @inject UserService UserService
+@inject UserState UserState
 @inject NavigationManager NavManager
 @rendermode InteractiveServer
 
@@ -34,8 +35,10 @@
 
     private async Task AttemptLogin()
     {
-        if (await UserService.ValidateLoginAsync(username, password))
+        var user = await UserService.ValidateLoginAsync(username, password);
+        if (user != null)
         {
+            UserState.Login(user.Id, user.Username);
             NavManager.NavigateTo("/home");
         }
         else

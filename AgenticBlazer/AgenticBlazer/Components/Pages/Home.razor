@@ -1,8 +1,105 @@
 ﻿@page "/home"
+@using AgenticBlazer.Data
+@using AgenticBlazer.Services
+@inject UserState UserState
+@inject PoemService PoemService
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Poems Feed</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (!UserState.IsLoggedIn)
+{
+    <div class="alert alert-warning mt-3">Please <a href="/">log in</a> to view and interact with poems.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+        <h2>Poems Feed</h2>
+        <div>
+            <label class="me-2 fw-bold">Order By:</label>
+            <select class="form-select w-auto d-inline-block" @bind="orderBy">
+                <option value="latest">Latest</option>
+                <option value="upvotes">Most Upvoted</option>
+            </select>
+            <button class="btn btn-outline-primary ms-3" @onclick="GoToComposition">My Poems</button>
+            <button class="btn btn-outline-danger ms-2" @onclick="Logout">Logout</button>
+        </div>
+    </div>
 
+    @if (poems == null)
+    {
+        <p>Loading...</p>
+    }
+    else if (!poems.Any())
+    {
+        <p>No poems have been submitted yet.</p>
+    }
+    else
+    {
+        @foreach (var poem in poems)
+        {
+            var hasUpvoted = poem.Upvotes.Any(u => u.UserId == UserState.CurrentUserId);
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">@poem.Title</h5>
+                    <h6 class="card-subtitle mb-3 text-muted">By @poem.User?.Username on @poem.CreatedAt.ToString("g")</h6>
+                    <p class="card-text border-start border-3 border-info ps-3 py-1" style="white-space: pre-wrap; font-family: Georgia, serif;">@poem.Content</p>
+                    <button class="btn btn-sm @(hasUpvoted ? "btn-success" : "btn-outline-success")" 
+                            @onclick="() => ToggleUpvote(poem.Id)">
+                        &#x25B2; Upvote (@poem.Upvotes.Count)
+                    </button>
+                </div>
+            </div>
+        }
+    }
+}
 
-Welcome to your new app.
+@code {
+    private List<Poem>? poems;
+    private string _orderBy = "latest";
+    private string orderBy
+    {
+        get => _orderBy;
+        set
+        {
+            if (_orderBy != value)
+            {
+                _orderBy = value;
+                _ = LoadPoems();
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserState.IsLoggedIn)
+        {
+            await LoadPoems();
+        }
+    }
+
+    private async Task LoadPoems()
+    {
+        poems = await PoemService.GetSubmittedPoemsAsync(orderBy);
+        StateHasChanged();
+    }
+
+    private async Task ToggleUpvote(int poemId)
+    {
+        if (!UserState.IsLoggedIn) return;
+        await PoemService.ToggleUpvoteAsync(poemId, UserState.CurrentUserId!.Value);
+        await LoadPoems();
+    }
+
+    private void GoToComposition()
+    {
+        NavManager.NavigateTo("/composition");
+    }
+
+    private void Logout()
+    {
+        UserState.Logout();
+        NavManager.NavigateTo("/");
+    }
+}
