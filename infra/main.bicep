@@ -150,3 +150,4 @@ resource rawStorageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-
 }
 
 output webAppUrl string = webApp.properties.defaultHostName
+output webAppName string = webApp.name
