@@ -1,0 +1,57 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Grant permissions needed for OIDC
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP: 'rg-agenticblazer' # Update this with your actual target Resource Group name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure using OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Azure Infrastructure (Bicep)
+        id: bicep-deploy
+        uses: azure/arm-deploy@v2
+        with:
+          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          template: infra/main.bicep
+          parameters: sqlAdministratorLogin=agenticadmin sqlAdministratorLoginPassword=${{ secrets.SQL_PASSWORD }}
+          failOnStdErr: false
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x' 
+
+      - name: Build and Publish App
+        run: |
+          dotnet publish ./AgenticBlazer/AgenticBlazer/AgenticBlazer.csproj -c Release -o ./publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ steps.bicep-deploy.outputs.webSiteName }}
+          package: ./publish
+
+      - name: Logout from Azure
+        run: az logout
