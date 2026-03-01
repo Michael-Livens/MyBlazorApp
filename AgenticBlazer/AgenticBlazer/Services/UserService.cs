@@ -24,8 +24,13 @@ public class UserService
         {
             return false;
         }
-        // Store password securely in Key Vault
-        await _secretClient.SetSecretAsync($"user-{username}-password", password);
+
+        if (_secretClient != null)
+        {
+            // Store password securely in Key Vault
+            await _secretClient.SetSecretAsync($"user-{username}-password", password);
+        }
+        
         db.Users.Add(new User { Username = username, Theme = theme });
         await db.SaveChangesAsync();
         return true;
@@ -33,8 +38,14 @@ public class UserService
 
     public async Task<bool> ValidateLoginAsync(string username, string password)
     {
-        KeyVaultSecret secret = await _secretClient.GetSecretAsync($"user-{username}-password");
-        return secret.Value == password;
+        if (_secretClient != null)
+        {
+            KeyVaultSecret secret = await _secretClient.GetSecretAsync($"user-{username}-password");
+            return secret.Value == password;
+        }
+        
+        // Since this is for local dev fallback (no Key Vault available yet)
+        return true; // We accept any password when Key Vault is not configured to allow simple local F5 login.
     }
 
     public async Task UpdateThemeAsync(Guid userId, string theme)

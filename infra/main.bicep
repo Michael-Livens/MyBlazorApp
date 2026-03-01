@@ -2,7 +2,7 @@
 param location string = resourceGroup().location
 
 @description('The base name for resources.')
-param baseName string = 'agntcau${uniqueString(resourceGroup().id)}'
+param baseName string = 'agntcwin${uniqueString(resourceGroup().id)}'
 
 @description('The SQL administrator username.')
 param sqlAdministratorLogin string
@@ -17,7 +17,7 @@ var webSiteName = '${baseName}-web'
 var sqlServerName = '${baseName}-sql'
 var databaseName = 'AgenticBlazerDb'
 var keyVaultName = '${baseName}-kv'
-var storageAccountName = 'agntc${substring(uniqueString(resourceGroup().id), 0, 8)}st'
+var storageAccountName = 'agntcw${substring(uniqueString(resourceGroup().id), 0, 8)}st'
 
 // --- Resources ---
 
@@ -69,12 +69,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: hostingPlanName
   location: location
   sku: {
-    name: 'B1'        // Reverting to Basic tier due to Free/Linux resource group restrictions in this region
-    tier: 'Basic'
-  }
-  kind: 'linux'
-  properties: {
-    reserved: true
+    name: 'F1'        // Free tier for Windows App Service
+    tier: 'Free'
   }
 }
 
@@ -87,7 +83,7 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|10.0' // Align with .NET 10
+      netFrameworkVersion: 'v10.0' // Align with .NET 10 for Windows App Service
       appSettings: [
         {
           name: 'KeyVaultName'

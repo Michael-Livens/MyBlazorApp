@@ -12,28 +12,40 @@ namespace AgenticBlazer
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.Configuration.AddAzureKeyVault(
-                new Uri($"https://{builder.Configuration["KeyVaultName"]}.vault.azure.net/"),
-                new DefaultAzureCredential());
+            
+            var keyVaultName = builder.Configuration["KeyVaultName"];
+            if (!string.IsNullOrEmpty(keyVaultName) && keyVaultName != "your-keyvault-name")
+            {
+                builder.Configuration.AddAzureKeyVault(
+                    new Uri($"https://{keyVaultName}.vault.azure.net/"),
+                    new DefaultAzureCredential());
+            }
+
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+                ?? builder.Configuration["DefaultConnection"] 
+                ?? "Server=(localdb)\\mssqllocaldb;Database=AgenticBlazerLocal;Trusted_Connection=True;MultipleActiveResultSets=true";
 
             builder.Services.AddDbContextFactory<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration["DefaultConnection"]));
+                options.UseSqlServer(connectionString));
 
             builder.Services.AddScoped(x =>
-                new AgenticBlazer.Services.UserService(
+            {
+                SecretClient? secretClient = null;
+                if (!string.IsNullOrEmpty(keyVaultName) && keyVaultName != "your-keyvault-name")
+                {
+                    secretClient = new SecretClient(
+                        new Uri($"https://{keyVaultName}.vault.azure.net/"),
+                        new DefaultAzureCredential());
+                }
+                
+                return new AgenticBlazer.Services.UserService(
                     x.GetRequiredService<IDbContextFactory<AppDbContext>>(),
-                    new SecretClient(
-                        new Uri($"https://{builder.Configuration["KeyVaultName"]}.vault.azure.net/"),
-                        new DefaultAzureCredential())));
+                    secretClient!);
+            });
             
             builder.Services.AddScoped<AgenticBlazer.Services.UserState>();
             builder.Services.AddScoped<AgenticBlazer.Services.PoemService>();
 
-            // Add Razor Components and Antiforgery services
-            builder.Services.AddRazorComponents()
-                .AddInteractiveServerComponents()
-                .AddInteractiveWebAssemblyComponents();
-                
             var app = builder.Build();
 
             // Ensure database is created

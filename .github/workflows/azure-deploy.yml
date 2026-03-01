@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 env:
-  AZURE_RESOURCE_GROUP: 'rg-agenticblazer' # Update this with your actual target Resource Group name
+  AZURE_RESOURCE_GROUP: 'rg-agenticblazer-win' # Target the new Windows Resource Group
 
 jobs:
   build-and-deploy:
@@ -45,7 +45,7 @@ jobs:
 
       - name: Build and Publish App
         run: |
-          dotnet publish ./AgenticBlazer/AgenticBlazer/AgenticBlazer.csproj -c Release -o ./publish
+          dotnet publish ./AgenticBlazer/AgenticBlazer/AgenticBlazer.csproj -c Release -r win-x86 --self-contained true -o ./publish
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
