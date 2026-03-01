@@ -17,7 +17,7 @@ var webSiteName = '${baseName}-web'
 var sqlServerName = '${baseName}-sql'
 var databaseName = 'AgenticBlazerDb'
 var keyVaultName = '${baseName}-kv'
-var storageAccountName = '${baseName}storage'
+var storageAccountName = 'agntc${substring(uniqueString(resourceGroup().id), 0, 8)}st'
 
 // --- Resources ---
 
