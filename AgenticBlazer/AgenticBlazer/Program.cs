@@ -29,6 +29,11 @@ namespace AgenticBlazer
             builder.Services.AddScoped<AgenticBlazer.Services.UserState>();
             builder.Services.AddScoped<AgenticBlazer.Services.PoemService>();
 
+            // Add Razor Components and Antiforgery services
+            builder.Services.AddRazorComponents()
+                .AddInteractiveServerComponents()
+                .AddInteractiveWebAssemblyComponents();
+                
             var app = builder.Build();
 
             // Ensure database is created
