@@ -1,6 +1,9 @@
 using AgenticBlazer.Components;
 using Microsoft.EntityFrameworkCore;
 using AgenticBlazer.Data;
+using Azure.Identity;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Security.KeyVault.Secrets;
 
 namespace AgenticBlazer
 {
@@ -9,16 +12,20 @@ namespace AgenticBlazer
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            
-            builder.Services.AddDbContextFactory<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Configuration.AddAzureKeyVault(
+                new Uri($"https://{builder.Configuration["KeyVaultName"]}.vault.azure.net/"),
+                new DefaultAzureCredential());
 
-            // Add services to the container.
-            builder.Services.AddRazorComponents()
-                .AddInteractiveServerComponents()
-                .AddInteractiveWebAssemblyComponents();
+            builder.Services.AddDbContextFactory<AppDbContext>(options =>
+                options.UseSqlServer(builder.Configuration["DefaultConnection"]));
+
+            builder.Services.AddScoped(x =>
+                new AgenticBlazer.Services.UserService(
+                    x.GetRequiredService<IDbContextFactory<AppDbContext>>(),
+                    new SecretClient(
+                        new Uri($"https://{builder.Configuration["KeyVaultName"]}.vault.azure.net/"),
+                        new DefaultAzureCredential())));
             
-            builder.Services.AddScoped<AgenticBlazer.Services.UserService>();
             builder.Services.AddScoped<AgenticBlazer.Services.UserState>();
             builder.Services.AddScoped<AgenticBlazer.Services.PoemService>();
 

@@ -44,10 +44,11 @@
 
     private async Task AttemptLogin()
     {
-        var user = await UserService.ValidateLoginAsync(username, password);
-        if (user != null)
+        var isValid = await UserService.ValidateLoginAsync(username, password);
+        if (isValid)
         {
-            UserState.Login(user.Id, user.Username, user.Theme);
+            // Only theme and username available, no user object
+            UserState.Login(Guid.Empty, username, UserState.CurrentTheme);
             NavManager.NavigateTo("/home");
         }
         else
@@ -61,3 +62,4 @@
         UserState.SetTheme(theme);
     }
 }
+
