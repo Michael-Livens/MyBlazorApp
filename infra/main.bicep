@@ -2,7 +2,7 @@
 param location string = resourceGroup().location
 
 @description('The base name for resources.')
-param baseName string = 'agntc${uniqueString(resourceGroup().id)}'
+param baseName string = 'agntcau${uniqueString(resourceGroup().id)}'
 
 @description('The SQL administrator username.')
 param sqlAdministratorLogin string
@@ -134,12 +134,12 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
 }
 
 // 5. Role Assignment for Storage Blob Data Contributor (for Web App MI)
-resource storageBlobDataContributorRole 'Microsoft.Authorization/roleDefinitions@2022-04-01-preview' existing = {
+resource storageBlobDataContributorRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
   scope: subscription()
   name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
 }
 
-resource rawStorageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01-preview' = {
+resource rawStorageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, webApp.id, storageBlobDataContributorRole.id)
   scope: storageAccount
   properties: {
