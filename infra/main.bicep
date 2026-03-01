@@ -69,8 +69,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: hostingPlanName
   location: location
   sku: {
-    name: 'F1'        // Free tier
-    tier: 'Free'
+    name: 'B1'        // Reverting to Basic tier due to Free/Linux resource group restrictions in this region
+    tier: 'Basic'
   }
   kind: 'linux'
   properties: {
