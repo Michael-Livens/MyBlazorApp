@@ -47,9 +47,16 @@
         var isValid = await UserService.ValidateLoginAsync(username, password);
         if (isValid)
         {
-            // Only theme and username available, no user object
-            UserState.Login(Guid.Empty, username, UserState.CurrentTheme);
-            NavManager.NavigateTo("/home");
+            var user = await UserService.GetUserByUsernameAsync(username);
+            if (user != null)
+            {
+                UserState.Login(user.Id, username, user.Theme ?? "light");
+                NavManager.NavigateTo("/home");
+            }
+            else
+            {
+                errorMessage = "User record not found in database.";
+            }
         }
         else
         {

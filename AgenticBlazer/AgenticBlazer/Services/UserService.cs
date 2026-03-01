@@ -40,12 +40,25 @@ public class UserService
     {
         if (_secretClient != null)
         {
-            KeyVaultSecret secret = await _secretClient.GetSecretAsync($"user-{username}-password");
-            return secret.Value == password;
+            try
+            {
+                KeyVaultSecret secret = await _secretClient.GetSecretAsync($"user-{username}-password");
+                return secret.Value == password;
+            }
+            catch
+            {
+                return false;
+            }
         }
         
         // Since this is for local dev fallback (no Key Vault available yet)
         return true; // We accept any password when Key Vault is not configured to allow simple local F5 login.
+    }
+
+    public async Task<User?> GetUserByUsernameAsync(string username)
+    {
+        using var db = await _dbContextFactory.CreateDbContextAsync();
+        return await db.Users.FirstOrDefaultAsync(u => u.Username == username);
     }
 
     public async Task UpdateThemeAsync(Guid userId, string theme)
