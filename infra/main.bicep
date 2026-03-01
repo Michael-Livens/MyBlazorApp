@@ -2,7 +2,7 @@
 param location string = resourceGroup().location
 
 @description('The base name for resources.')
-param baseName string = 'agenticblzr${uniqueString(resourceGroup().id)}'
+param baseName string = 'agntc${uniqueString(resourceGroup().id)}'
 
 @description('The SQL administrator username.')
 param sqlAdministratorLogin string
@@ -69,8 +69,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: hostingPlanName
   location: location
   sku: {
-    name: 'B1'        // Basic tier provides managed identity support
-    tier: 'Basic'
+    name: 'F1'        // Free tier
+    tier: 'Free'
   }
   kind: 'linux'
   properties: {
